@@ -1,8 +1,8 @@
-# --- Secretos (CRÍTICO) ---
+# --- Secret ---
 .env
 **/.env
 
-# --- Datos Locales del Bot ---
+# --- Local Bot ---
 memoria.json
 vistos.txt
 
