@@ -54,7 +54,7 @@ def buscar_vuelos():
         nombres_aerolineas = response.result.get('dictionaries', {}).get('carriers', {})
 
         # 2. CONSTRUIR EL MENSAJE
-        msg = f"✈️ **TOP 3 VUELOS: {origin} ➡️ {destination}**\n📅 Fecha: {date}\n\n"
+        msg = f"✈️ **TOP 3 VUELOS: {origin} a {destination}**\n Fecha: {date}\n\n"
         
         precios = []
 
@@ -69,31 +69,31 @@ def buscar_vuelos():
             # Traducimos (ej: IB -> Iberia)
             nombre = nombres_aerolineas.get(codigo, codigo)
 
-            icono = "🥇" if i == 0 else "🥈" if i == 1 else "🥉"
+            icono = "1" if i == 0 else "🥈" if i == 1 else "🥉"
             
             # Añadimos línea al mensaje
             msg += f"{icono} **{price} {currency}** | {nombre}\n"
             precios.append(price)
 
-        msg += f"\n🎯 Objetivo: < {max_price} EUR"
+        msg += f"\n Objetivo: < {max_price} EUR"
         
         mejor_precio = precios[0]
-        print(f"💰 Mejores precios encontrados: {precios}")
+        print(f" Mejores precios encontrados: {precios}")
 
         # 4. ENVIAR ALERTA SI HAY CHOLLO
         if mejor_precio <= max_price:
-            print("🚀 ¡Precio objetivo encontrado! Enviando Telegram...")
+            print(" ¡Precio encontrado! Enviando Telegram...")
             enviar_telegram(msg)
         else:
-            print(f"💤 El más barato ({mejor_precio}€) sigue por encima de {max_price}€. A dormir.")
+            print(f" El más barato ({mejor_precio}€) sigue por encima de {max_price}€. A dormir.")
 
     except ResponseError as error:
-        print(f"⚠️ Error de Amadeus: {error}")
+        print(f" Error de Amadeus: {error}")
     except Exception as e:
-        print(f"⚠️ Error general: {e}")
+        print(f" Error general: {e}")
 
 if __name__ == "__main__":
-    print("🚀 Radar de Vuelos Iniciado (Daemon Mode)")
+    print(" mRadar de Vuelos Iniciado (Daemon Mode)")
     
     # Primera ejecución al arrancar
     buscar_vuelos()
