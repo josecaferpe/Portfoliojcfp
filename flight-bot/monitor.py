@@ -5,7 +5,6 @@ import schedule
 from amadeus import Client, ResponseError
 from dotenv import load_dotenv
 
-# Cargar secretos
 load_dotenv()
 
 # Cliente Amadeus
@@ -22,9 +21,9 @@ def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     try:
         requests.post(url, data={"chat_id": CHAT_ID, "text": mensaje, "parse_mode": "Markdown"})
-        print("✅ Telegram enviado.")
+        print("Telegram enviado.")
     except Exception as e:
-        print(f"❌ Error enviando Telegram: {e}")
+        print(f"Error enviando Telegram: {e}")
 
 def buscar_vuelos():
     origin = os.getenv('ORIGIN_CODE', 'MAD').strip()
@@ -32,7 +31,7 @@ def buscar_vuelos():
     date = os.getenv('DEPARTURE_DATE').strip()
     max_price = float(os.getenv('MAX_PRICE', 100))
     
-    print(f"\n🔎 [RADAR] Buscando Top 3: {origin} -> {destination} ({date})")
+    print(f"\n[RADAR] Buscando Top 3: {origin} -> {destination} ({date})")
 
     try:
         # Petición a Amadeus
@@ -42,19 +41,19 @@ def buscar_vuelos():
             departureDate=date,
             adults=1,
             currencyCode='EUR',
-            max=10  # Pedimos 10 para poder elegir los mejores
+            max=10 
         )
 
         if not response.data:
-            print("❌ No hay vuelos disponibles.")
+            print("No hay vuelos disponibles.")
             return
 
-        # 1. TRADUCTOR DE AEROLÍNEAS (Diccionario)
+        # 1. TRADUCTOR DE AEROLÍNEAS
         # La API nos da los códigos en una sección separada llamada 'dictionaries'
         nombres_aerolineas = response.result.get('dictionaries', {}).get('carriers', {})
 
         # 2. CONSTRUIR EL MENSAJE
-        msg = f"✈️ **TOP 3 VUELOS: {origin} a {destination}**\n Fecha: {date}\n\n"
+        msg = f"**TOP 3 VUELOS: {origin} a {destination}**\n Fecha: {date}\n\n"
         
         precios = []
 
@@ -64,14 +63,11 @@ def buscar_vuelos():
             price = float(vuelo['price']['total'])
             currency = vuelo['price']['currency']
             
-            # Sacamos el código (ej: IB)
             codigo = vuelo['validatingAirlineCodes'][0]
-            # Traducimos (ej: IB -> Iberia)
             nombre = nombres_aerolineas.get(codigo, codigo)
 
             icono = "1" if i == 0 else "🥈" if i == 1 else "🥉"
             
-            # Añadimos línea al mensaje
             msg += f"{icono} **{price} {currency}** | {nombre}\n"
             precios.append(price)
 
@@ -80,7 +76,6 @@ def buscar_vuelos():
         mejor_precio = precios[0]
         print(f" Mejores precios encontrados: {precios}")
 
-        # 4. ENVIAR ALERTA SI HAY CHOLLO
         if mejor_precio <= max_price:
             print(" ¡Precio encontrado! Enviando Telegram...")
             enviar_telegram(msg)
