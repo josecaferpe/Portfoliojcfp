@@ -1,8 +1,5 @@
-name: 🚀 CD - Auto Deploy
+name: CD - Auto Deploy
 
-# ¿Cuándo se ejecuta?
-# Solo cuando se acepta el código y entra en la rama 'main'
-# (No queremos desplegar ramas de prueba a producción)
 on:
   push:
     branches: [ "main" ]
@@ -14,21 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 🚚 Conectar por SSH y Desplegar
+    - name: Conectar por SSH y Desplegar
       uses: appleboy/ssh-action@v0.1.10
       with:
-        # Aquí usamos los Secretos que (espero) configuramos antes
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
-        # Estos son los comandos que GitHub escribirá en tu servidor:
         script: |
-          # 1. Entrar en la carpeta del proyecto
           cd /opt/sysops-lab/
-          
-          # 2. Dar permisos de ejecución a los scripts (por si acaso)
           chmod +x /opt/sysops-lab/scripts/*.sh
-          
-          # 3. Ejecutar el script de despliegue que creamos
           ./scripts/deploy.sh
