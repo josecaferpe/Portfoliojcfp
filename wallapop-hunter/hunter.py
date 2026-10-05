@@ -17,11 +17,10 @@ SEARCH_KEYWORD = os.getenv('SEARCH_KEYWORD', 'ps5 pro')
 MIN_PRICE = float(os.getenv('MIN_PRICE', 350.0))
 MAX_PRICE = float(os.getenv('MAX_PRICE', 900.0))
 
-# LEEMOS EL LÍMITE DEL ENV (Por defecto 30 si falla)
 try:
     SCAN_LIMIT = int(os.getenv('SCAN_LIMIT', 30))
 except ValueError:
-    SCAN_LIMIT = 30 # Si has puesto texto en vez de número
+    SCAN_LIMIT = 30 
 
 excluded_raw = os.getenv('EXCLUDED_WORDS', '')
 EXCLUDED_WORDS = [word.strip().lower() for word in excluded_raw.split(',') if word.strip()]
@@ -30,13 +29,12 @@ WALLAPOP_URL = f"https://es.wallapop.com/app/search?keywords={SEARCH_KEYWORD.rep
 
 MEMORY_FILE = "memoria.json"
 
-print(f"⚙️ CONFIGURACIÓN CARGADA:")
+print(f" CONFIGURACIÓN CARGADA:")
 print(f"   - Buscando: {SEARCH_KEYWORD}")
 print(f"   - Rango: {MIN_PRICE}€ - {MAX_PRICE}€")
 print(f"   - Límite Escaneo: {SCAN_LIMIT} productos") # <--- AQUÍ VERÁS SI LO COGE
 print(f"   - Ignorando: {EXCLUDED_WORDS}")
 
-# --- GESTIÓN DE MEMORIA ---
 def cargar_memoria():
     if not os.path.exists(MEMORY_FILE): return {} 
     try:
@@ -46,7 +44,6 @@ def cargar_memoria():
 def guardar_memoria(memoria):
     with open(MEMORY_FILE, "w") as f: json.dump(memoria, f, indent=4)
 
-# --- TELEGRAM ---
 def enviar_tarjeta_telegram(texto, imagen_url=None):
     try:
         if imagen_url and "http" in imagen_url:
@@ -62,11 +59,10 @@ def enviar_tarjeta_telegram(texto, imagen_url=None):
             url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
             requests.post(url, data={"chat_id": CHAT_ID, "text": texto, "parse_mode": "Markdown"})
             
-        print("✅ Tarjeta enviada a Telegram.")
+        print("Tarjeta enviada a Telegram.")
     except Exception as e:
-        print(f"❌ Error Telegram: {e}")
+        print(f"Error Telegram: {e}")
 
-# --- CHROME ---
 def get_driver():
     options = Options()
     options.add_argument('--no-sandbox')
@@ -86,19 +82,18 @@ def get_driver():
                 command_executor=f"http://{selenium_host}:4444/wd/hub",
                 options=options
             )
-            print("✅ Conexión con Chrome establecida.")
+            print("Conexión con Chrome establecida.")
             return driver
         except Exception as e:
-            print(f"⏳ Chrome no está listo. Esperando 5s...")
+            print(f"Chrome no está listo. Esperando 5s...")
             time.sleep(5)
-    raise Exception("❌ Imposible conectar tras 5 intentos.")
+    raise Exception("Imposible conectar tras 5 intentos.")
 
-# --- LÓGICA PRINCIPAL ---
 def cazar():
-    print(f"\n🕵️‍♂️ Escaneando Wallapop...")
+    print(f"\n Escaneando Wallapop...")
     
     memoria = cargar_memoria()
-    print(f"🧠 Memoria cargada: {len(memoria)} productos.")
+    print(f"Memoria cargada: {len(memoria)} productos.")
 
     driver = None
     try:
@@ -108,25 +103,24 @@ def cazar():
         
         # CÁLCULO DE SCROLLS DINÁMICO
         num_scrolls = int(SCAN_LIMIT / 10) + 1
-        print(f"📜 Ejecutando {num_scrolls} scrolls para llegar a {SCAN_LIMIT} items...")
+        print(f" Ejecutando {num_scrolls} scrolls para llegar a {SCAN_LIMIT} items...")
         
         for i in range(num_scrolls):
             driver.execute_script(f"window.scrollTo(0, {(i+1)*1500});")
             time.sleep(1.5)
 
         productos = driver.find_elements(By.CSS_SELECTOR, "a[href*='/item/']")
-        print(f"📦 Elementos cargados: {len(productos)}")
+        print(f" Elementos cargados: {len(productos)}")
 
         hallazgos = [] 
         cambios_en_memoria = False
         
-        # USAMOS LA VARIABLE AQUÍ
         for prod in productos[:SCAN_LIMIT]:
             try:
                 raw_text = prod.text
                 link = prod.get_attribute("href")
                 
-                # FOTO
+                # FOTO ANUNCIO
                 foto_url = None
                 try:
                     img_elem = prod.find_element(By.TAG_NAME, "img")
@@ -163,15 +157,15 @@ def cazar():
                 titulo_aviso = None
 
                 if link not in memoria:
-                    titulo_aviso = "✨ NUEVO PRODUCTO DETECTADO"
-                    print(f"      🆕 Encontrado: {titulo} ({precio_actual}€)")
+                    titulo_aviso = " NUEVO PRODUCTO DETECTADO"
+                    print(f"      Encontrado: {titulo} ({precio_actual}€)")
                     memoria[link] = precio_actual
                     cambios_en_memoria = True
                 else:
                     precio_viejo = memoria[link]
                     if precio_actual < precio_viejo:
-                        titulo_aviso = "📉 BAJADA DE PRECIO DETECTADA"
-                        print(f"      📉 ¡Bajada!: {titulo} ({precio_viejo}€ -> {precio_actual}€)")
+                        titulo_aviso = " BAJADA DE PRECIO DETECTADA"
+                        print(f"      ¡Bajada!: {titulo} ({precio_viejo}€ -> {precio_actual}€)")
                         memoria[link] = precio_actual
                         cambios_en_memoria = True
                     else:
@@ -195,13 +189,13 @@ def cazar():
             guardar_memoria(memoria)
 
         if len(hallazgos) > 0:
-            print(f"🚀 Enviando {len(hallazgos)} tarjetas...")
+            print(f" Enviando {len(hallazgos)} tarjetas...")
             for item in hallazgos:
                 msg = (
                     f"**{item['aviso']}**\n"
-                    f"📦 {item['titulo']}\n"
-                    f"💰 **{item['precio']} €**\n"
-                    f"🔗 [Ver en Wallapop]({item['link']})"
+                    f"{item['titulo']}\n"
+                    f"**{item['precio']} €**\n"
+                    f"[Ver en Wallapop]({item['link']})"
                 )
                 enviar_tarjeta_telegram(msg, item['foto'])
                 time.sleep(1)
@@ -209,14 +203,14 @@ def cazar():
             print("💤 Sin novedades.")
 
     except Exception as e:
-        print(f"❌ Error general: {e}")
+        print(f"Error general: {e}")
     finally:
         if driver:
             driver.quit()
 
 if __name__ == "__main__":
     MINUTOS = 3
-    print(f"🚀 Hunter V12 (Configurable - Cada {MINUTOS} min)")
+    print(f" Hunter V12 (Configurable - Cada {MINUTOS} min)")
     cazar() 
     import schedule
     schedule.every(MINUTOS).minutes.do(cazar)
